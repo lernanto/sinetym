@@ -46,35 +46,33 @@ def load_dictionaries(prefix='.'):
 
     return dicts
 
-def load_datasets(config):
+def load_datasets(config: dict) -> pd.DataFrame:
     """
     加载数据集.
 
     Parameters:
-        config (dict): 数据集配置
+        config: 多层级的配置字典，分析配置文件获得
 
     Returns:
-        data (`pandas.DataFrame`): 所有数据集汇总成的数据表
+        data: 所有数据集汇总成的数据表
     """
 
     logging.info(f'loading datasets...')
 
     data = []
-    for d in config:
+    for d in config['datasets']:
         if isinstance(d, str):
             dataset = getattr(sinetym.datasets, d)
-
         else:
             d = d.copy()
             dataset = getattr(sinetym.datasets, d.pop('name')).filter(**d)
 
-        # 如果数据集包含方言变体，把变体编号加入为方言 ID 的一部分
-        if 'variant' in dataset.columns:
-            dataset = dataset.assign(did=dataset['did'] + dataset['variant'])
-
         data.append(dataset)
 
     data = sinetym.datasets.concat(*data)
+    # 删除不含有效方言、字、读音信息的记录
+    for name in 'dialect', 'input', 'output':
+        data.dropna(how='all', subset=config['columns'][name], inplace=True)
 
     logging.info(f'done, {data.shape[0]} data loaded.')
     return data
@@ -355,7 +353,7 @@ def mkdict(config):
     prefix = config.get('dictionary_dir', '.')
     logging.info(f'make dictionaries to {prefix}...')
 
-    data = load_datasets(config['datasets'])
+    data = load_datasets(config)
 
     os.makedirs(prefix, exist_ok=True)
 
@@ -706,7 +704,7 @@ if __name__ == '__main__':
                 for name in ('dialect', 'input', 'output')]
 
     if args.command in ('train', 'evaluate'):
-        data = load_datasets(config['datasets'])
+        data = load_datasets(config)
         data = tuple([OrdinalEncoder(
             categories=[dicts[c].index for c in config['columns'][name]],
             dtype=np.int32,
@@ -742,7 +740,7 @@ if __name__ == '__main__':
         )
 
     elif args.command == 'benchmark':
-        benchmark(config, load_datasets(config['datasets']))
+        benchmark(config, load_datasets(config))
 
     elif args.command == 'export':
         export(config, args.model, dicts, args.output)
