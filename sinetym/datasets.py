@@ -96,7 +96,8 @@ class Dataset:
     def __str__(self):
         return self.name
 
-def concat(*datasets: list[Dataset | pandas.DataFrame]) -> Dataset:
+
+def concat(*datasets: list[Dataset | pandas.DataFrame]) -> pandas.DataFrame:
     """
     把多个数据集按顺序拼接为一个
 
@@ -107,13 +108,10 @@ def concat(*datasets: list[Dataset | pandas.DataFrame]) -> Dataset:
         output: 拼接后的数据集
     """
 
-    return Dataset(
-        'dataset',
-        data=pandas.concat(
-            [d.data if isinstance(d, Dataset) else d for d in datasets],
-            axis=0,
-            ignore_index=True
-        )
+    return pandas.concat(
+        [d.data if isinstance(d, Dataset) else d for d in datasets],
+        axis=0,
+        ignore_index=True
     )
 
 
