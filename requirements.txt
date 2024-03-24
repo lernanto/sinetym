@@ -1,0 +1,6 @@
+pandas [excel] >= 1.5
+numpy
+scipy
+scikit-learn >= 1.2
+retry
+OpenCC
